@@ -1,54 +1,72 @@
-async function scan_tree(ns, start) {
-	let res = {};
+/** @param {NS} ns */
+async function scan(ns, server, result = []) {
+	if (result.indexOf(server) > -1) return result;
 
-	let scan_res = await ns.scan(start);
-	let i = 1; 
-	if (start == "home") i--;
-	for (; i < scan_res.length; i++) {
-		let branch = await scan_tree(ns, scan_res[i]);
-		res[scan_res[i]] = branch;
+	let branches = await ns.scan(server);
+	result.push(server);
+
+	for (let i = 0; i < branches.length; i++) {
+		await scan(ns, branches[i], result);
 	}
-	return res;
-}
+
+	return result;
+};
 
 /** @param {NS} ns */
-async function hack_tree(ns, tree, ports) {
-	if (tree == null) return;
+async function hack(ns, server) {
 
-	let keys = Object.keys(tree);
-	let len = keys.length;
+	if (ns.hasRootAccess(server)) return true;
+	if (ns.getServerRequiredHackingLevel(server) > ns.getHackingLevel()) return false;
 
-	for (var i = 0; i < len; i++) {
-		if (!(ns.hasRootAccess(keys[i])) && (ns.getServerNumPortsRequired(keys[i]) <= ports)) {
-			let ports = ns.getServerNumPortsRequired(keys[i]);
-			let server = keys[i]
-			ns.print(`Hacking ${keys[i]}`)
-			if (ports >= 5) {
+	let ports = ns.getServerNumPortsRequired(server);
+	ns.print(`Hacking ${server}`)
+
+	switch (true) {
+		case ports >= 5:
+			if (ns.fileExists("SQLInject.exe", "home")) {
 				await ns.sqlinject(server);
-			} if (ports >= 4) {
+			};
+		case ports >= 4:
+			if (ns.fileExists("BruteSSH.exe", "home")) {
 				await ns.httpworm(server);
-			} if (ports >= 3) {
+			};
+		case ports >= 3:
+			if (ns.fileExists("relaySMTP.exe", "home")) {
 				await ns.relaysmtp(server);
-			} if (ports >= 2) {
+			};
+		case ports >= 2:
+			if (ns.fileExists("FTPCrack.exe", "home")) {
 				await ns.ftpcrack(server);
-			} if (ports >= 1) {
+			};
+		case ports >= 1:
+			if (ns.fileExists("BruteSSH.exe", "home")) {
 				await ns.brutessh(server);
-			} 
-			await ns.nuke(server);
-		}
-		await hack_tree(ns, tree[i], ports);
+			};
+		case ports >= 0:
+			if (ns.getServer(server).openPortCount >= ports) {
+				await ns.nuke(server);
+			}
 	}
+
+	if (ns.hasRootAccess(server)) return true;
+	return false;
 }
 
 /** @param {NS} ns */
 export async function main(ns) {
-	ns.disableLog("scan");
-	ns.disableLog("hasRootAccess")
-	ns.disableLog("getServerNumPortsRequired")
+	ns.disableLog("ALL");
 
-	let tree = await scan_tree(ns, "home");
-	ns.print(tree);
+	let servers = await scan(ns, "home");
 
-	await hack_tree(ns, tree, 0);
+
+	let controlled = [];
+
+	for (let i = 0; i < servers.length; i++) {
+		if (await hack(ns, servers[i])) {
+			controlled.push(servers[i]);
+		}
+	}
+
+	ns.print(`Controlled servers: ${controlled}`);
 
 }
