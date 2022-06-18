@@ -1,4 +1,4 @@
-/** @param {NS} ns */
+/** @param {import(".").NS} ns */
 async function scan(ns, server, result = []) {
 	if (result.indexOf(server) > -1) return result;
 
@@ -12,7 +12,7 @@ async function scan(ns, server, result = []) {
 	return result;
 };
 
-/** @param {NS} ns */
+/** @param {import(".").NS} ns */
 async function hack(ns, server) {
 
 	if (ns.hasRootAccess(server)) return true;
@@ -52,7 +52,7 @@ async function hack(ns, server) {
 	return false;
 }
 
-/** @param {NS} ns */
+/** @param {import(".").NS} ns */
 export async function main(ns) {
 	ns.disableLog("ALL");
 
