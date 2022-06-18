@@ -1,16 +1,4 @@
-/** @param {import(".").NS} ns */
-async function scan(ns, server, result = []) {
-	if (result.indexOf(server) > -1) return result;
-
-	let branches = await ns.scan(server);
-	result.push(server);
-
-	for (let i = 0; i < branches.length; i++) {
-		await scan(ns, branches[i], result);
-	}
-
-	return result;
-};
+import { scan } from "./utils/index.js";
 
 /** @param {import(".").NS} ns */
 async function hack(ns, server) {
